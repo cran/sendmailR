@@ -1,0 +1,22 @@
+commit 0a5a838d77bd443a317a03347e3077e312895016
+Author: Olaf Mersmann <olafm@statistik.tu-dortmund.de>
+Date:   2009-07-21 00:26:58 +0200
+
+    Bump version number
+
+commit d7ba5ff6e31bb4b5274cdef9371bf727104dd75b
+Author: Olaf Mersmann <olafm@statistik.tu-dortmund.de>
+Date:   2009-07-21 00:25:29 +0200
+
+    Major improvements
+    
+     * Submit commands / text to server with proper line endings
+     * Better documentation
+     * Add verbose option for debugging
+     * Add simple example
+
+commit 3d9016eab8d1b84b8f3374090b4c5805e237be15
+Author: Olaf Mersmann <olafm@statistik.tu-dortmund.de>
+Date:   2009-07-11 01:04:28 +0200
+
+    Inital checkin
