@@ -5,8 +5,39 @@
 ##  Olaf Mersmann (OME) <olafm@datensplitter.net>
 ##
 
-smtpSubmitMail <- function(server, port, from, to, headers, msg, verbose=FALSE) {
-  waitFor <- function(lcode) {
+.write_mail <- function(headers, msg, sock) {
+  if (!is.list(msg))
+    msg <- list(msg)
+
+  ## Generate MIME headers:
+  boundary <- paste(packBits(sample(0:1, 256, TRUE)), collapse="")
+  headers$`MIME-Version` <- "1.0"
+  headers$`Content-Type` <- sprintf("multipart/mixed; boundary=\"%s\"", boundary)
+
+  writeLines(paste(names(headers),
+                   unlist(headers), sep=": "),
+             sock, sep="\r\n")
+  writeLines("", sock, sep="\r\n")
+
+  writeLines("This is a message with multiple parts in MIME format.", sock, sep="\r\n")
+
+  for (part in msg) {
+    writeLines(sprintf("--%s", boundary), sock, sep="\r\n")
+    if (inherits(part, "mime_part"))
+      .write_mime_part(part, sock)
+    else if (is.character(part)) { ## Legacy support for plain old string
+      ## writeLines(sprintf("--%s", boundary), sock, sep="\r\n")
+      writeLines("Content-Type: text/plain; format=flowed\r\n", sock, sep="\r\n")
+      writeLines(part, sock, sep="\r\n")
+    }
+  }
+  writeLines(sprintf("--%s--", boundary), sock, sep="\r\n")
+}
+
+.smtp_submit_mail <- function(server, port, headers, msg, verbose=FALSE) {
+  stopifnot(is.character(headers$From), is.character(headers$To))
+  
+  wait_for <- function(lcode) {
     done <- FALSE
     while (!done) {
       line <- readLines(con=sock, n=1)
@@ -27,11 +58,11 @@ smtpSubmitMail <- function(server, port, from, to, headers, msg, verbose=FALSE) 
     return(list(code=code, msg=msg))
   }
 
-  sendCmd <- function(cmd, code) {
+  send_command <- function(cmd, code) {
     if (verbose)
       message(">> ", cmd)
     writeLines(cmd, sock, sep="\r\n")
-    waitFor(code)
+    wait_for(code)
   }
 
   nodename <- Sys.info()[4]
@@ -43,49 +74,42 @@ smtpSubmitMail <- function(server, port, from, to, headers, msg, verbose=FALSE) 
                  server, port))
   on.exit(close(sock))
   ## << 220 <hostname> ESMTP
-  waitFor(220)
+  wait_for(220)
   ## >> HELO localhost
   ## << 250 mail.statistik.uni-dortmund.de
-  sendCmd(paste("HELO ", nodename), 250)
+  send_command(paste("HELO ", nodename), 250)
   ## >> MAIL FROM: <foo@bah.com>
   ## << 250 2.1.0 Ok
-  sendCmd(paste("MAIL FROM: ", from), 250)
+  send_command(paste("MAIL FROM: ", headers$From), 250)
   ## >> RCPT TO: <bah@baz.org>
   ## << 250 2.1.5 Ok
-  sendCmd(paste("RCPT TO: ", to), 250)
+  send_command(paste("RCPT TO: ", headers$To), 250)
   ## >> DATA
   ## << 354 blah fu
-  sendCmd("DATA", 354)
+  send_command("DATA", 354)
   ## >> <actual message + headers + .>
   if (verbose)
     message(">> <message data>")
-  headers$From <- from
-  headers$To <- to  
-  writeLines(paste(names(headers), unlist(headers), sep=": "), sock, sep="\r\n")
-  writeLines("", sock, sep="\r\n")
-  writeLines(msg, sock, sep="\r\n")
+
+  .write_mail(headers, msg, sock)
+  
   writeLines(".", sock, sep="\r\n")
-  if (verbose) {
-    writeLines(paste(names(headers), unlist(headers), sep=": "))
-    writeLines("")
-    writeLines(msg)
-    message(">> EOM marker")
-  }
-  waitFor(250)
+  
+  wait_for(250)
   ## << 250 2.0.0 Ok: queued as XXXXXXXX
   ## >> QUIT
   ## << 221 2.0.0 Bye
-  sendCmd("QUIT", 221)
+  send_command("QUIT", 221)
 }
 
+##' @export
 sendmail <- function(from, to, subject, msg, ...,
                      headers=list(),
                      control=list()) {
   ## Argument checks:
-  stopifnot(is.list(headers))
-  stopifnot(is.list(control))
+  stopifnot(is.list(headers), is.list(control))
   
-  getValue <- function(n, default="") {
+  get_value <- function(n, default="") {
     if (n %in% names(control)) {
       return(control[[n]])
     } else if (n %in% names(.SendmailREnv$options)) {
@@ -95,41 +119,18 @@ sendmail <- function(from, to, subject, msg, ...,
     }
   }
 
+  headers$From <- from
+  headers$To <- to
   headers$Subject <- subject
 
-  server <- getValue("smtpServer", "localhost")
-  port <- getValue("smtpPort", 25)
-  verbose <- getValue("verbose", FALSE)
-  
-  smtpSubmitMail(server, port, from, to, headers, msg, verbose)
-}
-
-## Option managment shamelessly taken from the lattice package.
-.SendmailREnv <- new.env(parent=emptyenv())
-.SendmailREnv$options <- list()
-
-updateList <- function (x, val) {
-  if (is.null(x)) 
-    x <- list()
-  modifyList(x, val)
-}
-
-sendmailOptions <- function(...) {
-  new <- list(...)
-  if (is.null(names(new)) && length(new) == 1 && is.list(new[[1]])) 
-    new <- new[[1]]
-  old <- .SendmailREnv$options
-  if (length(new) == 0) 
-    return(old)
-  nm <- names(new)
-  if (is.null(nm)) 
-    return(old[unlist(new)])
-  isNamed <- nm != ""
-  if (any(!isNamed)) 
-    nm[!isNamed] <- unlist(new[!isNamed])
-  retVal <- old[nm]
-  names(retVal) <- nm
-  nm <- nm[isNamed]
-  .SendmailREnv$options <- updateList(old, new[nm])
-  invisible(retVal)
+  transport <- get_value("transport", "smtp")
+  verbose <- get_value("verbose", FALSE)
+  if (transport == "smtp") {
+    server <- get_value("smtpServer", "localhost")
+    port <- get_value("smtpPort", 25)
+    
+    .smtp_submit_mail(server, port, headers, msg, verbose)
+  } else if (transport == "debug") {
+    .write_mail(headers, msg, stdout())
+  }
 }
