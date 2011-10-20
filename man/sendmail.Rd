@@ -7,7 +7,6 @@
   local SMTP server.
 }
 \usage{
-sendmail(from, to, subject, msg, ..., headers = list(), control = list())
 sendmail(from, to, subject, msg, ..., headers=list(), control=list())
 }
 \arguments{

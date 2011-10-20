@@ -1,15 +1,16 @@
 Package: sendmailR
-Version: 1.1-0
-Title: send email using R
-Description: Package contains a simple smtp client which provides a
-        portable solution for sending email from within R.
-Author: Olaf Mersmann <olafm@datensplitter.net>
 Maintainer: Olaf Mersmann <olafm@datensplitter.net>
-Depends: R (>= 2.11.0), base64
-Suggests: lattice, ggplot2
 License: GPL-2
+Title: send email using R
 LazyData: yes
+Author: Olaf Mersmann <olafm@datensplitter.net>
+Description: Package contains a simple SMTP client which provides a
+        portable solution for sending email, including attachements,
+        from within R.
+Version: 1.1-1
+Depends: R (>= 2.11.0), base64
 Collate: 'mime_part.R' 'options.R' 'sendmailR.r'
-Packaged: 2011-01-31 11:03:53 UTC; olafm
+Date:
+Packaged: 2011-10-20 11:03:39 UTC; olafm
 Repository: CRAN
-Date/Publication: 2011-01-31 15:06:49
+Date/Publication: 2011-10-20 11:54:58
