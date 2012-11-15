@@ -5,6 +5,14 @@
 ##  Olaf Mersmann (OME) <olafm@datensplitter.net>
 ##
 
+.rfc2822_date <- function(time=Sys.time()) {
+  lc <- Sys.getlocale("LC_TIME")
+  on.exit(Sys.setlocale("LC_TIME", lc))
+  Sys.setlocale("LC_TIME", "C")
+  strftime(time, format="%a, %d %b %Y %H:%M:%S -0000",
+           tz="UTC", use.tz=TRUE)
+}
+
 .write_mail <- function(headers, msg, sock) {
   if (!is.list(msg))
     msg <- list(msg)
@@ -102,6 +110,34 @@
   send_command("QUIT", 221)
 }
 
+##' Simplistic sendmail utility for R. Uses SMTP to submit a message
+##' to a local SMTP server.
+##'
+##' @title Send mail from within R
+##'
+##' @param from From whom the mail message is (RFC2822 style address).
+##' @param to Recipient of the message (valid RFC2822 style address).
+##' @param subject Subject line of message.
+##' @param msg Body text of message or a list containing
+##'   \code{\link{mime_part}} objects.
+##' @param \dots ...
+##' @param headers Any other headers to include.
+##' @param control List of SMTP server settings. Valid values are the
+##'   possible options for \code{\link{sendmail_options}}.
+##'
+##' @seealso \code{\link{mime_part}} for a way to add attachments.
+##' @keywords utilities
+##' 
+##' @examples
+##' \dontrun{
+##' from <- sprintf("<sendmailR@@\\%s>", Sys.info()[4])
+##' to <- "<olafm@@datensplitter.net>"
+##' subject <- "Hello from R"
+##' body <- list("It works!", mime_part(iris))
+##' sendmail(from, to, subject, body,
+##'          control=list(smtpServer="ASPMX.L.GOOGLE.COM"))
+##' }
+##'
 ##' @export
 sendmail <- function(from, to, subject, msg, ...,
                      headers=list(),
@@ -128,6 +164,12 @@ sendmail <- function(from, to, subject, msg, ...,
   headers$To <- to
   headers$Subject <- subject
 
+  ## Add Date header if not explicitly set. This fixes the annoyance,
+  ## that apparently Thunderbird does not sort mails correctly if they
+  ## do not have a Date header.
+  if (is.null(headers$Date))
+    headers$Date <- .rfc2822_date()
+  
   transport <- get_value("transport", "smtp")
   verbose <- get_value("verbose", FALSE)
   if (transport == "smtp") {

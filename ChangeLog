@@ -1,3 +1,21 @@
+commit 56c792dece8cd372d85600804392f3fb650ec2ba
+Author: Olaf Mersmann <olafm@p-value.net>
+Date:   2012-11-15 16:56:29 +0100
+
+    Add Date: header to outgoing messages.
+
+commit b8d8c6e02c3713d147ca4d3c1b28488ef16068d3
+Author: Olaf Mersmann <olafm@p-value.net>
+Date:   2012-11-15 16:53:40 +0100
+
+    Replace base64 with base64enc.
+
+commit 350278e94e4f2fa039bf8cde07c227b5ffc363ff
+Author: Olaf Mersmann <olafm@p-value.net>
+Date:   2011-12-17 23:59:59 +0100
+
+    Fix small documentation warnings and port to roxygen2.
+
 commit 99d5dca47ffd2dde522295e425c91923ec8a744d
 Author: Olaf Mersmann <olafm@statistik.tu-dortmund.de>
 Date:   2011-10-20 12:57:31 +0200
