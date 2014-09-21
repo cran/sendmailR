@@ -13,6 +13,17 @@
            tz="UTC", use.tz=TRUE)
 }
 
+.get_recipients <- function(headers) {
+  res <- headers$To
+  if (!is.null(headers$Cc)) {
+    res <- c(res, headers$Cc)
+  }
+  if (!is.null(headers$Bcc)) {
+    res <- c(res, headers$Bcc)
+  }
+  res
+}
+
 .write_mail <- function(headers, msg, sock) {
   if (!is.list(msg))
     msg <- list(msg)
@@ -22,8 +33,14 @@
   headers$`MIME-Version` <- "1.0"
   headers$`Content-Type` <- sprintf("multipart/mixed; boundary=\"%s\"", boundary)
 
-  writeLines(paste(names(headers),
-                   unlist(headers), sep=": "),
+  headers$To <- paste(headers$To, collapse=", ")
+  if (!is.null(headers$Cc))
+    headers$Cc <- paste(headers$Cc, collapse=", ")
+  ## Do not include BCC recipients in headers, after all, it is a
+  ## _blind_ carbon-copy.
+  headers$Bcc <- NULL
+  
+  writeLines(paste(names(headers), unlist(headers), sep=": "),
              sock, sep="\r\n")
   writeLines("", sock, sep="\r\n")
 
@@ -43,7 +60,7 @@
 }
 
 .smtp_submit_mail <- function(server, port, headers, msg, verbose=FALSE) {
-  stopifnot(is.character(headers$From), is.character(headers$To))
+  stopifnot(is.character(headers$From))
   
   wait_for <- function(lcode) {
     done <- FALSE
@@ -91,7 +108,8 @@
   send_command(paste("MAIL FROM: ", headers$From), 250)
   ## >> RCPT TO: <bah@baz.org>
   ## << 250 2.1.5 Ok
-  send_command(paste("RCPT TO: ", headers$To), 250)
+  recipients <- .get_recipients(headers)
+  sapply(recipients, function(x) send_command(paste("RCPT TO: ", x), 250))
   ## >> DATA
   ## << 354 blah fu
   send_command("DATA", 354)
@@ -116,7 +134,9 @@
 ##' @title Send mail from within R
 ##'
 ##' @param from From whom the mail message is (RFC2822 style address).
-##' @param to Recipient of the message (valid RFC2822 style address).
+##' @param to Recipient of the message (vector of valid RFC2822 style addresses).
+##' @param cc Carbon-copy recipients (vector of valid RFC2822 style addresses).
+##' @param bcc Blind carbon-copy recipients (vector of valid RFC2822 style addresses).
 ##' @param subject Subject line of message.
 ##' @param msg Body text of message or a list containing
 ##'   \code{\link{mime_part}} objects.
@@ -139,7 +159,7 @@
 ##' }
 ##'
 ##' @export
-sendmail <- function(from, to, subject, msg, ...,
+sendmail <- function(from, to, subject, msg, cc, bcc, ...,
                      headers=list(),
                      control=list()) {
   ## Argument checks:
@@ -147,8 +167,8 @@ sendmail <- function(from, to, subject, msg, ...,
   if (length(from) != 1)
     stop("'from' must be a single address.")
   
-  if (length(to) != 1)
-    stop("'to' must be a single address.")
+  if (length(to) < 1)
+    stop("'to' must contain at least one address.")
   
   get_value <- function(n, default="") {
     if (n %in% names(control)) {
@@ -162,6 +182,10 @@ sendmail <- function(from, to, subject, msg, ...,
   
   headers$From <- from
   headers$To <- to
+  if (!missing(cc)) 
+    headers$Cc <- cc
+  if (!missing(bcc))
+    headers$Bcc <- bcc
   headers$Subject <- subject
 
   ## Add Date header if not explicitly set. This fixes the annoyance,
@@ -178,6 +202,7 @@ sendmail <- function(from, to, subject, msg, ...,
     
     .smtp_submit_mail(server, port, headers, msg, verbose)
   } else if (transport == "debug") {
-    .write_mail(headers, msg, stdout())
+    message("Recipients: ", paste(.get_recipients(headers), collapse=", "))
+    .write_mail(headers, msg, stderr())
   }
 }
