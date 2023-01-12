@@ -1,9 +1,13 @@
-8264a326eb03c0007a8f01c1f9865070 *DESCRIPTION
+2afd77e07245a36353c2348f4665f639 *DESCRIPTION
 96a4166063208f8222c354d52719713c *NAMESPACE
 e2575fd1036046470b2a4d5cdcb3e960 *R/mime_part.R
 46dc268584fb10718c6bf2f767b36e41 *R/options.R
-4c02805744841caaa4a2db1611741776 *R/sendmailR.r
-aa48c71958c3f536d7999b278b1cd9e2 *README.md
+fcc94432164479df00b54ac896ee3f68 *R/sendmailR.r
+40c6d7e6449219b84ba91dd3f8b1ec9c *README.md
+b7dfba5048fdd7fca999530d8e5bb69c *build/vignette.rds
+35ae1eb8349ccce4cc88efc32348cc87 *inst/doc/sending-html-reports.R
+53ddb626e926463f2efc8cda289c3484 *inst/doc/sending-html-reports.Rmd
+2474b983c97ad256b0a7494f33534e3b *inst/doc/sending-html-reports.html
 5db1fe312526a2d5e61d9eb238f9f37a *man/mime_part.Rd
 447ada937faff8b9336fc9ddfea4f0c0 *man/mime_part.character.Rd
 c4992831ac208f140f94bbb8c61f98d2 *man/mime_part.data.frame.Rd
@@ -12,6 +16,7 @@ c4992831ac208f140f94bbb8c61f98d2 *man/mime_part.data.frame.Rd
 1729cf4f2f223455ee3f636a6cd01c46 *man/mime_part.matrix.Rd
 b4ce7305119225b6bde0cea55110a51c *man/mime_part.trellis.Rd
 a4c36670c6992a12ee6988921a773063 *man/mime_part_html.Rd
-aef21af950674a6ace8f99629322c1cf *man/sendmail.Rd
+6f5f7ec4e7c0a6d1a81df2286c91cb43 *man/sendmail.Rd
 3c113ac677e442c46bf61f42178adbf8 *man/sendmail_options.Rd
 ff2d8ba39b55fe3590b7faa4db828115 *tests/multiple_recipients.R
+53ddb626e926463f2efc8cda289c3484 *vignettes/sending-html-reports.Rmd
